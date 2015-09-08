@@ -1,0 +1,9 @@
+if (true) {
+	var a = 1;
+} else {
+	var b = 2;
+}
+
+console.log(a);
+console.log(b);
+
