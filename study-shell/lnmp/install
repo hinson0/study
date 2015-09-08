@@ -1,0 +1,344 @@
+#! /bin/bash
+
+if [ `id -u` -ne 0 ]; then
+    echo '请切换到root用户在运行本脚本...'
+    exit 1
+fi
+
+DEFAULT_NGINX_VERSION='1.6.1'
+DEFAULT_PHP_VERSION='5.5.16'
+DEFAULT_MARIADB_VERSION='10.0.13'
+DEFAULT_MARIADB_PASSWORD='123456'
+
+echo "请输入您要下载的nginx版本..."
+read -p "(默认安装nginx-${DEFAULT_NGINX_VERSION}):" NGINX_VERSION
+
+echo "请输入您要下载的php版本..."
+read -p "(默认安装php${DEFAULT_PHP_VERSION}):" PHP_VERSION
+
+echo "请输入您要安装的mariadb版本..."
+read -p "(默认安装${DEFAULT_MARIADB_VERSION}):" MARIADB_VERSION
+
+echo "请输入mariadb密码..."
+read -p "(默认密码${DEFAULT_MARIADB_PASSWORD}):" MARIADB_PASSWORD
+
+CUR_DIR=`pwd`
+
+#========开始处理版本号=======#
+if [ -z ${NGINX_VERSION} ]; then
+    NGINX_VERSION=${DEFAULT_NGINX_VERSION}
+fi
+# echo ${NGINX_VERSION}
+
+if [ -z ${PHP_VERSION} ]; then
+    PHP_VERSION=${DEFAULT_PHP_VERSION}
+fi
+# echo ${DEFAULT_PHP_VERSION}
+
+if [ -z ${MARIADB_VERSION} ]; then
+    MARIADB_VERSION=${DEFAULT_MARIADB_VERSION}
+fi
+
+if [ -z ${MARIADB_PASSWORD} ]; then
+    MARIADB_PASSWORD=${DEFAULT_MARIADB_PASSWORD}
+fi
+
+echo '#========切换sources.list=======#'
+sleep 3
+cp /etc/apt/sources.list /etc/apt/sources.list.bak
+cp /home/yangzhibing/shell/lnmp/conf/14.04.sources.list /etc/apt/sources.list
+apt-get update 
+
+echo '#========开始处理软件依赖=======#'
+sleep 3
+apt-get install -y build-essential gcc g++ make
+packages='libpcre3 libpcre3-dev libxml2-dev libcurl4-openssl-dev libjpeg62-dev libpng12-dev libfreetype6-dev libmcrypt-dev cmake libncurses5-dev'
+for package in ${packages};
+do
+    apt-get install -y ${package};
+    apt-get -fy install;
+    apt-get -y autoremove;
+done
+
+
+#========开始处理nginx=======#
+echo '#========开始处理nginx=======#'
+NGINX_TARGZ_FILE="nginx-${NGINX_VERSION}.tar.gz"
+function download_nginx() {
+    if [ -s ${NGINX_TARGZ_FILE} ]; then
+        echo "${NGINX_TARGZ_FILE}文件存在..."
+    else
+        echo "开始下载nginx-${NGINX_VERSION}..."
+        wget -c http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
+        if [ $? -eq 0 ]; then
+            echo "下载nginx-${NGINX_VERSION}成功..."
+        else
+            echo "下载nginx-${NGINX_VERSION}失败..."
+            echo "请核实您输入的nginx版本是否正确..."
+            echo "安装结束..."
+            exit 1
+        fi
+    fi
+}
+
+download_nginx
+
+function install_nginx() {
+    echo "开始安装${NGINX_TARGZ_FILE}..."
+    sleep 3
+    groupadd www
+    useradd -s /sbin/nologin -g www www
+
+    echo "开始解压..."
+    sleep 3
+    tar -zxvf ${NGINX_TARGZ_FILE}
+
+    cd nginx-${NGINX_VERSION}
+
+    echo "开始配置..."
+    sleep 3
+    NGINX_PREFIX="/usr/local/nginx${NGINX_VERSION}"
+    ./configure --user=www --group=www --prefix=${NGINX_PREFIX} --with-http_stub_status_module --with-http_ssl_module --with-http_gzip_static_module --with-ipv6
+
+    echo "开始编译..."
+    sleep 3
+    make && make install
+
+    echo "配置nginx..."
+    sleep 3
+    cp /home/yangzhibing/shell/lnmp/conf/nginx.conf ${NGINX_PREFIX}/conf/nginx.conf
+    mkdir ${NGINX_PREFIX}/conf/vhost
+
+    echo "建立软链接..."
+    sleep 3
+    NGINX_BIN_VERSION=${NGINX_VERSION//./}
+    ln -sf ${NGINX_PREFIX}/sbin/nginx /usr/bin/nginx${NGINX_BIN_VERSION}
+
+    echo "创建启动项..."
+    cp /home/yangzhibing/shell/lnmp/init.d/nginx /etc/init.d/nginx${NGINX_BIN_VERSION}
+    chmod +x /etc/init.d/nginx${NGINX_BIN_VERSION}
+    sed -i 's/-${NGINX_VERSION}/'${NGINX_VERSION}'/g' /etc/init.d/nginx${NGINX_BIN_VERSION}
+    sed -i 's/${NGINX_BIN_VERSION}/'${NGINX_BIN_VERSION}'/g' /etc/init.d/nginx${NGINX_BIN_VERSION}
+
+    echo "启动Nginx..."
+    /etc/init.d/nginx${NGINX_BIN_VERSION} start
+}
+
+install_nginx
+
+#========开始处理php=======#
+echo '#=======开始处理php=======#'
+PHP_TARGZ_FILE="php-${PHP_VERSION}.tar.gz"
+function download_php() {
+    if [ -s php-${PHP_VERSION}.tar.gz ]; then
+        echo "php-${PHP_VERSION}.tar.gz [found]"
+    else
+        echo "Error: php-${PHP_VERSION}.tar.gz not found!!!download now......"
+        wget -c http://www.php.net/distributions/php-${PHP_VERSION}.tar.gz
+        if [ $? -eq 0 ]; then
+            echo "Download php-${PHP_VERSION}.tar.gz successfully!"
+        else
+            wget -c http://museum.php.net/php5/php-${PHP_VERSION}.tar.gz
+            if [ $? -eq 0 ]; then
+                echo "Download php-${PHP_VERSION}.tar.gz successfully!"
+            else
+                echo "WARNING!May be the php version you input was wrong,please check!"
+                echo "PHP Version input was:"${PHP_VERSION}
+                sleep 5
+                exit 1
+            fi
+        fi
+    fi
+}
+
+download_php
+
+function installphp() {
+    # 解压目录
+    echo '开始解压目录...'
+    sleep 3
+    tar -zvxf ${PHP_TARGZ_FILE}
+
+    # 打开目录
+    cd "php-${PHP_VERSION}"
+
+    # 配置
+    echo '开始配置...'
+    sleep 3
+    PHP_PREFIX="/usr/local/php${PHP_VERSION}"
+    ./configure --prefix=${PHP_PREFIX} --enable-fpm --with-fpm-user=www --with-fpm-group=www --with-mysqli --with-pdo-mysql --with-iconv-dir --with-freetype-dir --with-jpeg-dir --with-png-dir --with-zlib --with-libxml-dir --enable-xml --disable-rpath --enable-bcmath --enable-shmop --enable-sysvsem --enable-inline-optimization --with-curl --enable-mbregex --enable-mbstring --with-mcrypt --enable-ftp --with-gd --enable-gd-native-ttf --with-openssl --with-mhash --enable-pcntl    --enable-sockets --with-xmlrpc --enable-zip --enable-soap --without-pear --with-gettext --disable-fileinfo
+
+    # 编译
+    echo '开始执行make && make install'
+    sleep 3
+    make && make install
+
+    # php.ini
+    echo '拷贝php.ini...'
+    sleep 3
+    cp php.ini-production ${PHP_PREFIX}/etc/php.ini
+
+    # 修改php.ini的配置
+    echo "修改php.ini..."
+    sleep 3
+    sed -i 's/post_max_size = 8M/post_max_size = 50M/g' ${PHP_PREFIX}/etc/php.ini
+    sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 50M/g' ${PHP_PREFIX}/etc/php.ini
+    sed -i 's/;date.timezone =/date.timezone = PRC/g' ${PHP_PREFIX}/etc/php.ini
+    sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/g' ${PHP_PREFIX}/etc/php.ini
+    sed -i 's/max_execution_time = 30/max_execution_time = 300/g' ${PHP_PREFIX}/etc/php.ini
+    sed -i 's/disable_functions =.*/disable_functions = passthru,exec,system,chroot,scandir,chgrp,chown,shell_exec,proc_open,proc_get_status,ini_alter,ini_restore,dl,pfsockopen,openlog,syslog,   readlink,symlink,popepassthru,stream_socket_server,fsockopen/g' ${PHP_PREFIX}/etc/php.ini
+
+    # php-fpm.conf 
+    echo '开始配置php-fpm.conf...'
+    sleep 3
+    cat >${PHP_PREFIX}/etc/php-fpm.conf<<EOF
+[global]
+pid = ${PHP_PREFIX}/var/run/php-fpm.pid
+error_log = ${PHP_PREFIX}/var/log/php-fpm.log
+log_level = notice
+
+[www]
+listen = /tmp/php-cgi.sock
+listen.backlog = -1
+listen.allowed_clients = 127.0.0.1
+listen.owner = www
+listen.group = www
+listen.mode = 0666
+user = www
+group = www
+pm = dynamic
+pm.max_children = 10
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 6
+request_terminate_timeout = 100
+request_slowlog_timeout = 0
+slowlog = ${PHP_PREFIX}/var/log/slow.log
+EOF
+
+    # 建立链接
+    echo '开始建立软链接到/usr/bin下...'
+    sleep 3
+    PHP_BIN_VERSION=${PHP_VERSION//./}
+    ln -sf ${PHP_PREFIX}/bin/php /usr/bin/php${PHP_BIN_VERSION}
+    ln -sf ${PHP_PREFIX}/bin/phpize /usr/bin/phpize${PHP_BIN_VERSION}
+    ln -sf ${PHP_PREFIX}/sbin/php-fpm /usr/bin/php-fpm${PHP_BIN_VERSION}
+
+    # 加入启动
+    echo '开始建立开机启动...'
+    sleep 3
+    cp ${CUR_DIR}/"php-${PHP_VERSION}"/sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm${PHP_BIN_VERSION}
+    chmod +x /etc/init.d/php-fpm${PHP_BIN_VERSION}
+
+    # 启动php-fpm
+    /etc/init.d/php-fpm${PHP_BIN_VERSION} start
+}
+
+installphp
+
+#========开始处理mariadb=======#
+echo '#========开始处理mariadb=======#'
+MARIADB_TARGZ_FILE="mariadb-${MARIADB_VERSION}.tar.gz"
+function download_mariadb() {
+    if [ -s ${MARIADB_TARGZ_FILE} ]; then
+        echo "${MARIADB_TARGZ_FILE}存在..."
+    else
+        echo "开始下载${MARIADB_TARGZ_FILE}......"
+        wget -c https://downloads.mariadb.org/interstitial/mariadb-${MARIADB_VERSION}/kvm-tarbake-jaunty-x86/${MARIADB_TARGZ_FILE}
+        if [ $? -eq 0 ]; then
+            echo "${MARIADB_TARGZ_FILE}下载成功..."
+        else
+            wget -c https://downloads.mariadb.org/interstitial/mariadb-${MARIADB_VERSION}/source/${MARIADB_TARGZ_FILE}
+            if [ $? -eq 0 ]; then
+                echo "${MARIADB_TARGZ_FILE}下载成功..."
+            else
+                echo "警告!您输入的mariadb版本出错,请检查..."
+                echo "您输入的mariadb版本是:"${MARIADB_VERSION}
+                sleep 5
+                exit 1
+            fi
+        fi
+    fi
+}
+
+download_mariadb
+
+function install_mariadb() {
+    echo '开始安装mariadb...'
+    sleep 3
+
+    echo '开始解压目录...'
+    sleep 3
+    tar -zxvf "mariadb-${MARIADB_VERSION}"
+    cd "mariadb-${MARIADB_VERSION}"
+
+    echo '开始配置...'
+    sleep 3
+    MARIADB_PREFIX="/usr/local/mariadb${MARIADB_VERSION}"
+    cmake -DCMAKE_INSTALL_PREFIX=${MARIADB_PREFIX} -DWITH_ARIA_STORAGE_ENGINE=1 -DWITH_XTRADB_STORAGE_ENGINE=1 -DWITH_INNOBASE_STORAGE_ENGINE=1 -DWITH_PARTITION_STORAGE_ENGINE=1 -DWITH_MYISAM_STORAGE_ENGINE=1 -DEXTRA_CHARSETS=all -DDEFAULT_CHARSET=utf8 -DDEFAULT_COLLATION=utf8_general_ci -DWITH_READLINE=1 -DWITH_SSL=system -DWITH_ZLIB=system -DWITH_EMBEDDED_SERVER=1 -DENABLED_LOCAL_INFILE=1
+
+    echo '开始编译...'
+    sleep 3
+    make && make install
+
+    echo '开始配置my.cnf...'
+    sleep 3
+    cp support-files/my-medium.cnf /etc/my.cnf
+    sed -i '/skip-external-locking/i\pid-file = '${MARIADB_PREFIX}'/data/mariadb.pid' /etc/my.cnf
+    sed -i '/skip-external-locking/i\log_error = '${MARIADB_PREFIX}'/data/mariadb.err' /etc/my.cnf
+    sed -i '/skip-external-locking/i\basedir = '${MARIADB_PREFIX} /etc/my.cnf
+    sed -i '/skip-external-locking/i\datadir = '${MARIADB_PREFIX}'/data' /etc/my.cnf
+    sed -i '/skip-external-locking/i\user = mariadb' /etc/my.cnf
+    sed -i 's:innodb:innodb:g' /etc/my.cnf
+    sed -i "s:/usr/local/mariadb/:${MARIADB_PREFIX}/:g" /etc/my.cnf
+
+    echo "开始安装数据库..."
+    sleep 3
+    ${MARIADB_PREFIX}/scripts/mysql_install_db --defaults-file=/etc/my.cnf --basedir=${MARIADB_PREFIX} --datadir="${MARIADB_PREFIX}/data" --user=mariadb
+
+    echo "开始修改目录权限..."
+    sleep 3
+    groupadd mariadb
+    useradd -s /sbin/nologin -M -g mariadb mariadb
+    chown -R mariadb:mariadb ${MARIADB_PREFIX}
+
+    echo "开始建立软链接..."
+    sleep 3
+    MARIADB_BIN_VERSION=${MARIADB_VERSION//./}
+    ln -sf ${MARIADB_PREFIX}/bin/mysql /usr/bin/mysql${MARIADB_BIN_VERSION}
+    ln -sf ${MARIADB_PREFIX}/bin/mysqldump /usr/bin/mysqldump${MARIADB_BIN_VERSION}
+    ln -sf ${MARIADB_PREFIX}/bin/myisamchk /usr/bin/myisamchk${MARIADB_BIN_VERSION}
+    ln -sf ${MARIADB_PREFIX}/bin/mysqld_safe /usr/bin/mysqld_safe${MARIADB_BIN_VERSION}
+
+    echo '开始建立启动...'
+    sleep 3
+    cp ${MARIADB_PREFIX}/support-files/mysql.server /etc/init.d/mariadb${MARIADB_BIN_VERSION}
+    chmod +x /etc/init.d/mariadb${MARIADB_BIN_VERSION}
+    sed -i 's:/usr/local/mariadb:'${MARIADB_PREFIX}':g' /etc/init.d/mariadb${MARIADB_BIN_VERSION}
+
+    echo "设置root密码..."
+    sleep 3
+    /etc/init.d/mariadb${MARIADB_BIN_VERSION} start
+
+    ${MARIADB_PREFIX}/bin/mysqladmin -u root password ${MARIADB_PASSWORD}
+    cat > /tmp/mariadb_sec_script<<EOF
+use mysql;
+update user set password=password('${MARIADB_PASSWORD}') where user='root';
+delete from user where not (user='root') ;
+delete from user where user='root' and password=''; 
+drop database test;
+DROP USER ''@'%';
+flush privileges;
+EOF
+
+    ${MARIADB_PREFIX}/bin/mysql -u root -p${MARIADB_PASSWORD} -h localhost < /tmp/mariadb_sec_script
+
+    rm -rf /tmp/mariadb_sec_script
+
+    echo "启动mariadb..."
+    sleep 3
+    /etc/init.d/mariadb${MARIADB_BIN_VERSION} restart
+}
+
+install_mariadb
+

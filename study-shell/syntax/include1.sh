@@ -1,0 +1,3 @@
+
+. ./include.sh
+echo $str

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+A=1
+export A
+
+PATH=${HOME}/bin:${PATH}
+export PATH
+

@@ -1,0 +1,68 @@
+#! /bin/bash
+
+PHP_VERSION=${1}
+prefix="/usr/local/php${PHP_VERSION}"
+bin_version=${PHP_VERSION//./}
+
+function uninstall_nginx() {
+    echo "开始卸载nginx..."
+    sleep 3
+    echo "你删除nginx版本是:nginx${NGINX_VERSION}"
+}
+
+function uninstall_php() {
+    echo "开始卸载php..."
+    sleep 3
+    echo ""
+    echo "您删除的php版本是:php${PHP_VERSION}"
+    read -p "(输入y or n):" ok
+    if [ ${ok} != 'y' ]; then
+        echo '退出卸载...'
+        exit 1
+    fi
+
+    echo '停止php-fpm...'
+    /etc/init.d/php-fpm${bin_version} stop
+
+    echo '删除安装目录...'
+    echo "安装目录:${prefix}"
+    read -p "(输入y or n):" prefix_ok
+    if [ ${prefix_ok} != 'y' ]; then
+        echo '退出卸载...'
+        exit 2
+    fi
+    rm -rf ${prefix}
+
+    echo '删除启动项...'
+    echo "启动项为:php-fpm${bin_version}"
+    read -p "(输入y or n):" php_fpm_ok
+    if [ ${php_fpm_ok} != 'y' ]; then
+        echo '退出卸载...'
+        exit 3
+    fi 
+    rm -rf /etc/init.d/php-fpm${bin_version}
+
+    echo '删除软链接...'
+    echo "软链接有如下几个..."
+    cat <<EOF
+/usr/bin/php${bin_version}
+/usr/bin/phpize${bin_version}
+/usr/bin/php-fpm${bin_version}
+EOF
+    read -p "(输入y or n):" php_ln_ok
+    if [ ${php_ln_ok} != 'y' ]; then
+        echo '退出卸载...'
+        exit 4
+    fi 
+    rm -rf /usr/bin/php${bin_version}
+    rm -rf /usr/bin/phpize${bin_version}
+    rm -rf /usr/bin/php-fpm${bin_version}
+        
+    echo '卸载完成...'
+}
+
+function uninstall_mariadb() {
+    echo '卸载mariadb...'
+}
+
+#uninstall

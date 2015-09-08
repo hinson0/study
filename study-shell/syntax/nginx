@@ -1,0 +1,27 @@
+#! /bin/bash
+
+NGINX_VERSION=${1}
+NGINX_TARGZ_FILE="nginx-${NGINX_VERSION}"
+CUR_DIR=`pwd`
+
+function download_nginx() {
+   wget -c http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz 
+}
+
+download_nginx
+
+function install_nginx() {
+    # 解压
+    tar -zxvf ${NGINX_TARGZ_FILE} 
+
+    # 配置
+    ./configure --user=www --group=www --prefix=/usr/local/nginx --with-http_stub_status_module --with-http_ssl_module --with-http_gzip_static_module --with-ipv6
+
+    # 编译
+
+    # 建立软链接
+
+    # 加入启动
+
+    # 启动nginx
+}

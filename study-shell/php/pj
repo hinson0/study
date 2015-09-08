@@ -1,0 +1,24 @@
+#!/usr/bin/env php 
+<?php
+$fp=fopen('php://stdin','r');
+$content='';
+$args = isset($argv[1])?$argv[1]:0;
+if($fp){
+    while($line=fgets($fp)){
+    $res = json_decode($line,true);
+    if($args){
+        //print_r("\033[0;0;32m".$res[$args]."\033[0m\n");
+        echo "\n";
+        print_r($res[$args]);
+        echo "\n\n";
+
+    }else{
+        foreach($res as $k =>$v){
+        echo "\033[0;0;32m".str_pad($k,10," ")." \033[0m"."\033[0;0;33m $v \033[0m \n";
+        }   
+        echo "\n\n";
+    }   
+
+    }   
+    fclose($fp);
+}
