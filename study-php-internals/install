@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# 默认用php-5.5.16做测试
+PHP_VERSION='5.5.16'
+PHP_TARGZ_FILE="php-${PHP_VERSION}.tar.gz"
+
+# 下载php
+function download_php() {
+    # 检查php文件是否存在
+    if [ -s ${PHP_TARGZ_FILE} ]; then
+        echo "${PHP_TARGZ_FILE}存在..."
+        sleep 3
+    else
+        echo "开始下载${PHP_TARGZ_FILE}..."
+        sleep 3
+        
+        # 地址1
+        wget -c "http://www.php.net/distributions/${PHP_TARGZ_FILE}"
+        if [ $? -eq 0 ]; then
+            return 0  
+        fi
+        
+        # 地址2
+        wget -c "http://museum.php.net/php5/${PHP_TARGZ_FILE}"
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+
+        # 出错
+        echo "无法下载...抱歉..."
+        sleep 3
+        exit 1
+    fi
+}
+
+# download_php
+
+# 安装php
+function install_php() {
+    # 解压目录
+    echo '解压php...'
+    sleep 3
+    tar -zxvf ${PHP_TARGZ_FILE} 
+    
+    cd "php-${PHP_VERSION}"
+
+    # 安装php
+    echo '开始configure...'
+    sleep 3
+    ./configure --prefix="${HOME}/php${PHP_VERSION}" --enable-debug --enable-maintainer-zts
+
+    echo '开始编译...'
+    sleep 3
+    make && make install
+
+    # 拷贝php.ini
+    echo '开始拷贝php.ini...'
+    sleep 3
+    cp php.ini-development ${HOME}/php${PHP_VERSION}/etc/php.ini
+    
+    # 修改php.ini
+    echo '修改php.ini配置...'
+    sleep 3
+    sed -i "s|; extension_dir = \"ext\"|extension_dir = \"${HOME}/php${PHP_VERSION}/lib/php/extensions/debug-zts-20121212\"|g" ${HOME}/php${PHP_VERSION}/etc/php.ini
+}
+
+# install_php
+
+# 创建bin目录
+if [ ! -d ${HOME}/bin ]; then
+    mkdir ${HOME}/bin
+fi
+
+# 创建软链接
+function ln_bin() {
+    echo '创建软链接...'
+    sleep 3
+    
+    PHP_BIN_VERSION=${PHP_VERSION//./}
+    ln -sf ${HOME}/php${PHP_VERSION}/bin/php ${HOME}/bin/php${PHP_BIN_VERSION} 
+    ln -sf ${HOME}/php${PHP_VERSION}/bin/phpize ${HOME}/bin/phpize${PHP_BIN_VERSION}
+}
+
+# ln_bin
+
+

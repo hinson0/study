@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# 特别说明：因为在这里修改了父shell的环境变量的值，需要使用source来执行本脚本
+# 添加bin到path中
+function bin_to_path() {
+    PROFILE="${HOME}/.profile"
+    if [ -f ${PROFILE} ]; then
+        # 刷新.profile
+        . "${PROFILE}"
+
+        # 刷新后，检查是否有${HOME}/bin
+        echo ${PATH} | grep ${HOME}/bin 
+
+        # 有bin目录，则不处理
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+
+        # 无bin目录
+        # 判断.profile是否有PATH值
+        cat ${PROFILE} | grep 'PATH=' >> /dev/null
+        if [ $? -eq 0 ]; then
+            # 存在PATH值，则修改
+            echo '存在PATH，修改中...'
+            sleep 3
+            sed -i 's|^PATH=.*|PATH=${HOME}/bin:${PATH}|g' ${PROFILE}
+        else
+            # 不存在PATH，则追加内容
+            echo '不存在PATH值，追加中...'
+            sleep 3
+            echo 'PATH=${HOME}/bin:${PATH}' >> ${PROFILE}
+        fi
+        
+        # 加完后，刷新.profile
+        . ${PROFILE}
+    fi
+
+    BASH_PROFILE="${HOME}/.bash_profile"
+    if [ -f ${BASH_PROFILE} ]; then
+        . "${BASH_PROFILE}"
+        echo ${PATH} | grep ${HOME}/bin
+
+        # 有bin目录，则不处理
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+
+        # 无bin目录
+        # 判断.bash_profile是否有PATH值
+        cat ${BASH_PROFILE} | grep 'PATH=' >> /dev/null
+        if [ $? -eq 0 ]; then
+            # 存在PATH值，则修改
+            echo '存在PATH，修改中...'
+            sleep 3
+            sed -i 's|^PATH=.*|PATH=${HOME}/bin:${PATH}|g' ${BASH_PROFILE}
+        else
+            # 不存在PATH，则追加内容
+            echo '不存在PATH值，追加中...'
+            sleep 3
+            echo 'PATH=${HOME}/bin:${PATH}' >> ${BASH_PROFILE}
+        fi
+        
+        # 加完后，刷新.bash_profile
+        . ${BASH_PROFILE}
+    fi
+}
+
+function modi_bash_profile() {
+    
+}
+
+function modi_profile() {
+    
+}
+
+bin_to_path
+

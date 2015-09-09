@@ -1,0 +1,23 @@
+=======
+#!/bin/bash
+
+# 创建index.php
+cat > ${HOME}/index.php <<EOF
+<?php
+
+phpinfo();
+
+EOF
+
+# 获取ip
+ip=`ifconfig | grep 'inet addr:' | grep -v '127.0.0.1' | awk '{print $2}' | tr -d 'addr:'`
+
+# 提示用户
+echo '##############################'
+echo "请用你的浏览器访问：${ip}:8555"
+echo '##############################'
+echo ''
+
+# 运行php
+php5516 -S ${ip}:8555 -c ${HOME}/php5516/etc/php.ini -t ${HOME}
+
