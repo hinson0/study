@@ -1,0 +1,43 @@
+﻿
+执行node require.js 
+
+其中几个值如下：
+require.main
+
+{
+    "id": ".",
+    "exports": {},
+    "parent": null,
+    "filename": "/home/yangzb/1_github/node-git/native/require.js",
+    "loaded": false,
+    "children": [],
+    "paths": [
+        "/home/yangzb/1_github/node-git/native/node_modules",
+        "/home/yangzb/1_github/node-git/node_modules",
+        "/home/yangzb/1_github/node_modules",
+        "/home/yangzb/node_modules",
+        "/home/node_modules",
+        "/node_modules"
+    ]
+}
+
+require.cache
+{
+    "/home/yangzb/1_github/node-git/native/require.js": {
+        "id": ".",
+        "exports": {},
+        "parent": null,
+        "filename": "/home/yangzb/1_github/node-git/native/require.js",
+        "loaded": false,
+        "children": [],
+        "paths": [
+            "/home/yangzb/1_github/node-git/native/node_modules",
+            "/home/yangzb/1_github/node-git/node_modules",
+            "/home/yangzb/1_github/node_modules",
+            "/home/yangzb/node_modules",
+            "/home/node_modules",
+            "/node_modules"
+        ]
+    }
+}
+
