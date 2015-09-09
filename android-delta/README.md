@@ -14,3 +14,10 @@
  经过上面2步骤，可以实现php生成增量包的行为，这里有个坑，请使用异步的方式去运行php脚本，因为生成增量包的行为是花时间的。我在项目中测试过，一个12M的apk文件，diff的时间在24S左右。
 
 目前比较有效的php异步模式：cli或者使用swoole拓展。这里不详说。
+
+
+# 参考资料
+
+ - bsdiff http://www.daemonology.net/bsdiff/
+ - pythod extension http://starship.python.net/crew/atuining/cx_bsdiff/index.html
+
