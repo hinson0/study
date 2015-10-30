@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+
+'use strict';
+
+let build = require('commander');
+
+build
+  .version('1.2.3')
+  .description('执行构建,包含js/css压缩,schema校验')
+  .option('-f, --force', '强制覆盖式构建')
+  .parse(process.argv);
+
+//if (build.args.length === 0) {
+//  build.help();
+//}
+

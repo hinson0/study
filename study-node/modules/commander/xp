@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+
+'use strict';
+
+let xp = require('commander');
+
+xp
+  .version('0.0.1')
+  .command('init', '初始化目录')
+  .command('build', '执行构建，包含压缩js/css文件，校验等工作')
+  .command('server', '在本地启动服务')
+  .parse(process.argv)

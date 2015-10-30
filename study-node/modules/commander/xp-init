@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+
+'use strict';
+
+let init = require('commander');
+
+init
+  .version('1.1.2')
+  .description('初始化模板文件到你本地目录')
+  .arguments('<type>')
+  .action(action)
+  .parse(process.argv);
+
+
+function action(type) {
+  if (type === 'zebra-section') {
+    console.log('zebra-section');
+  } else if (type === 'zebra-page') {
+    console.log('zebra-page');
+  } else {
+    console.log('error...');
+  }
+}
+
+function actionZebraSection() {
+  console.log('zebra-section');
+}
+
+function actionZebraPage() {
+  console.log('zebra-page');
+}
+
+
+

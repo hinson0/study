@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+
+'use strict';
+
+let xx = require('commander');
+
+xx
+  .version('0.0.1')
+  .option('-f, --foo', 'output foo string')
+  .option('-b, --bar', 'output bar string')
+
+xx.command('build')
+  .description('构建工具')
+  .version('0.0.2')
+  .option('-f, --force', '覆盖构建')
+  .option('-b, --bar', '测试bar')
+  .action(function () {
+    console.log(1);
+  });
+
+xx.command('init [type]')
+  .description('初始化项目目录')
+  .version('0.0.2')
+  .option('-f, --force', '强制覆盖')
+  .action(function (type, self, ddd) {
+    console.log(`init ${type}`);
+    //console.log(self);
+    //console.log(ddd);
+  });
+
+xx.parse(process.argv);
