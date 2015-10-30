@@ -7,14 +7,12 @@ function *foo() {
 
 function *test() {
   let a = yield foo;
-
-  console.log(a);
 }
 
 let it = test();
-console.log(it.next());
-console.log(it.next());
-console.log(it.next());
+console.log(it.next()); // value:function foo, done: false 
+console.log(it.next()); // value:undefined done:true
+console.log(it.next()); // value:undefined done:true
 
 
 // function *bar() {

@@ -26,10 +26,6 @@ function *gen2() {
   yield 'Foo';
   yield* gen1();
   yield 'Bar';
-
-  fs.readFile('1.txt', 'utf-8', function (content) {
-    
-  });
 }
 
 for (let value of gen2()) {

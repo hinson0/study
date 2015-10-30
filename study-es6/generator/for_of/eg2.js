@@ -16,3 +16,8 @@ for (let n of fabonacci()) {
   console.log(n);
 }
 
+
+/**
+ * es6的解构赋值还不支持
+ */ 
+
